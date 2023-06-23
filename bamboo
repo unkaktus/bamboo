@@ -3,6 +3,7 @@
 from tabulate import tabulate
 import subprocess
 import os
+import sys
 import numpy as np
 import pandas
 import glob
@@ -79,7 +80,7 @@ def merger_time(run_dir):
     if distance < 1e-12:
         status = "postmerger"
     if status != "postmerger":
-        merger_time = 0.0 
+        merger_time = 0.0
     return merger_time, status
 
 
@@ -104,6 +105,25 @@ class GU():
         return self.M**m * self.L**l * self.T**t
 
 @click.command()
+@click.argument('run_name')
+@click.option('--processors', default=32, help='Number of processors to use')
+def pack(run_name, processors):
+    run_dir_path = os.path.join(os.path.abspath(parfile_dir), run_name)
+    pack_path = os.path.join(os.path.abspath(parfile_dir), f'{run_name}.squashfs')
+    command = ["mksquashfs", run_dir_path, pack_path,
+        "-no-xattrs",
+        "-processors", f"{processors}",
+        "-e", "checkpoint.*", "-wildcards",
+        "-Xcompression-level", "5"]
+    # click.echo(f'{" ".join(command)}')
+    subprocess.run(command,
+        stdout=sys.stdout,
+        stderr=sys.stdout,
+    )
+cli.add_command(pack)
+
+
+@click.command()
 def list():
     table_header = ["Name", "Time", "Speed", "Merger Status", "Status", "Progress"]
     jobs = spanner_list()
@@ -124,7 +144,7 @@ def list():
             time_ms = (float(time[:-1]) - m_time) * GU(1).T.to('ms').value
             time_str = f'{time} ({time_ms:.1f}ms)'
             if m_status == "postmerger":
-                time_str = f'{time} ({time_ms:.1f}msam)' 
+                time_str = f'{time} ({time_ms:.1f}msam)'
             table.append([run_dir, time_str, speed, m_status, status, f'{progress} {progress_time}'])
         except Exception as e:
             print(e)
