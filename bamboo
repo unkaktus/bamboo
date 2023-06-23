@@ -106,16 +106,18 @@ class GU():
 
 @click.command()
 @click.argument('run_name')
-@click.option('--processors', default=32, help='Number of processors to use')
+@click.option('--processors', default=0, help='Number of processors to use')
 def pack(run_name, processors):
     run_dir_path = os.path.join(os.path.abspath(parfile_dir), run_name)
     pack_path = os.path.join(os.path.abspath(parfile_dir), f'{run_name}.squashfs')
     command = ["mksquashfs", run_dir_path, pack_path,
         "-no-xattrs",
-        "-processors", f"{processors}",
         "-e", "checkpoint.*", "-wildcards",
-        "-Xcompression-level", "5"]
-    # click.echo(f'{" ".join(command)}')
+        "-comp", "xz",
+        ]
+    if processors > 0:
+        command.append(["-processors", f"{processors}"])
+
     subprocess.run(command,
         stdout=sys.stdout,
         stderr=sys.stdout,
