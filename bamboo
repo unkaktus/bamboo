@@ -35,7 +35,7 @@ def spanner_list():
     jobs = {}
     for line_b in spanner_output.splitlines()[2:]:
         line = line_b.decode('utf-8')
-        if line.startswith("+"):
+        if line.startswith("├") or line.startswith("╰"):
             continue
         ls = line.split()
         name, status, progress, progress_time = ls[1], ls[3], ls[8], ls[9]
