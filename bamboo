@@ -121,29 +121,6 @@ class GU():
         return self.M**m * self.L**l * self.T**t
 
 @click.command()
-@click.argument('run_name')
-@click.option('--processors', default=0, help='Number of processors to use')
-def pack(run_name, processors):
-    run_dir_path = os.path.join(os.path.abspath(parfile_dir), run_name)
-    pack_path = os.path.join(os.path.abspath(parfile_dir), f'{run_name}.squashfs')
-    command = ["mksquashfs", run_dir_path, pack_path,
-        "-no-xattrs",
-        "-e", "checkpoint.*", "-wildcards",
-        "-comp", "gzip", "-noD",
-        "-Xcompression-level", "2",
-        ]
-    processors = 128
-    if processors > 0:
-        command.append(["-processors", f"{processors}"])
-
-    subprocess.run(command,
-        stdout=sys.stdout,
-        stderr=sys.stdout,
-    )
-cli.add_command(pack)
-
-
-@click.command()
 def list():
     table_header = ["Name", "Time", "Speed", "Done in", "Merger Status", "Status", "Progress"]
     jobs = spanner_list()
