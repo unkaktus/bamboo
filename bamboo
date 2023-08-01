@@ -140,8 +140,8 @@ def list():
             time, speed_str = runstats(run_dir_path)
             speed = float(speed_str.removesuffix('M/h')) * GU(1).T.to('ms') / u.h
             status, progress, progress_time = ["-", "-", "-"]
-            if run_dir in jobs:
-                job = jobs[run_dir]
+            if run_name in jobs:
+                job = jobs[run_name]
                 (status, progress, progress_time) = job
             m_time, m_status = merger_time(run_dir_path)
             time_ms = (float(time[:-1]) - m_time) * GU(1).T.to('ms').value
