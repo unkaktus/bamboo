@@ -120,14 +120,19 @@ class GU():
 
 @click.command()
 def list():
-    table_header = ["Name", "Time", "Speed", "Done in", "Merger Status", "Status", "Progress"]
+    table_header = ["Name", "Location", "Time", "Speed", "Done in", "Merger Status", "Status", "Progress"]
     jobs = spanner_list()
-    run_dirs = next(os.walk(parfile_dir))[1]
+
+    run_dirs = [os.path.dirname(filename)
+		for filename
+                in glob.glob("**/system.log", recursive=True)]
 
     table = []
     run_notes = {}
 
     for run_dir in run_dirs:
+        run_name = os.path.basename(run_dir)
+        location = os.path.dirname(run_dir)
         try:
             run_dir_path = os.path.join(os.path.abspath(parfile_dir), run_dir)
             if not is_bam_run(run_dir_path):
@@ -147,10 +152,10 @@ def list():
                 done_in_str = f'{done_in.value:.2f}d'
             else:
                 done_in_str = "-"
-            table.append([run_dir, time_str, speed_str, done_in_str, f'{m_status} ({m_time})', status, f'{progress} {progress_time}'])
+            table.append([run_name, location, time_str, speed_str, done_in_str, f'{m_status} ({m_time})', status, f'{progress} {progress_time}'])
         except Exception as e:
             print(e)
-            table.append([run_dir, "-", "-", "-", "-", "-", "-", "-"])
+            table.append([run_name, location, "-", "-", "-", "-", "-", "-", "-"])
 
     print(tabulate(table, headers=table_header, tablefmt='rounded_outline'))
 
