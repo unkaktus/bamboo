@@ -85,8 +85,6 @@ def merger_time(run_dir):
     a = np.argmin(gg)
     merger_time = time[a]
 
-    print(f'{run_dir} merger_d: {d[a]}')
-
     distance = d[-1]
     status = ""
     if distance > 1e-2:
