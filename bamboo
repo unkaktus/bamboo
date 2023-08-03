@@ -9,6 +9,7 @@ import pandas
 import glob
 import subprocess
 import click
+import json
 from astropy import units as u, constants as const
 
 parfile_dir = ""
@@ -34,16 +35,11 @@ def runstats(run_dir):
         return time, speed
 
 def spanner_list():
-    spanner_output = subprocess.check_output(['spanner', 'list'])
-
+    spanner_output = subprocess.check_output(['spanner', 'list', '--json'])
+    spanner_jobs = json.loads(spanner_output)
     jobs = {}
-    for line_b in spanner_output.splitlines()[2:]:
-        line = line_b.decode('utf-8')
-        if line.startswith("├") or line.startswith("╰"):
-            continue
-        ls = line.split()
-        name, status, progress, progress_time = ls[1], ls[3], ls[8], ls[9]
-        jobs[name] = (status, progress, progress_time)
+    for spanner_job in spanner_jobs:
+        jobs[spanner_job["Name"]] = spanner_job
     return jobs
 
 def number_of_lines(filename):
@@ -120,7 +116,7 @@ class GU():
 
 @click.command()
 def list():
-    table_header = ["Name", "Location", "Time", "Speed", "Done in", "Merger Status", "Status", "Progress"]
+    table_header = ["Name", "Location", "Time", "Speed", "Done in", "Merger Status", "State", "Progress"]
     jobs = spanner_list()
 
     run_dirs = [os.path.dirname(filename)
@@ -139,10 +135,11 @@ def list():
               continue
             time, speed_str = runstats(run_dir_path)
             speed = float(speed_str.removesuffix('M/h')) * GU(1).T.to('ms') / u.h
-            status, progress, progress_time = ["-", "-", "-"]
+            state, progress = ["-", "-"]
             if run_name in jobs:
                 job = jobs[run_name]
-                (status, progress, progress_time) = job
+                state = job["State"]
+                progress = f'{(job["Walltime"] / job["RequestedWalltime"]) * 100:2.0f}%'
             m_time, m_status = merger_time(run_dir_path)
             time_ms = (float(time[:-1]) - m_time) * GU(1).T.to('ms').value
             time_str = f'{time} ({time_ms:.1f}ms)'
@@ -152,7 +149,7 @@ def list():
                 done_in_str = f'{done_in.value:.2f}d'
             else:
                 done_in_str = "-"
-            table.append([run_name, location, time_str, speed_str, done_in_str, f'{m_status} ({m_time})', status, f'{progress} {progress_time}'])
+            table.append([run_name, location, time_str, speed_str, done_in_str, f'{m_status} ({m_time})', state, f'{progress}'])
         except Exception as e:
             print(e)
             table.append([run_name, location, "-", "-", "-", "-", "-", "-", "-"])
