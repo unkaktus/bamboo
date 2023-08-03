@@ -12,13 +12,8 @@ import click
 import json
 from astropy import units as u, constants as const
 
-parfile_dir = ""
-
 @click.group()
-@click.option('--root', default='.', help='Location of the runs')
-def cli(root):
-    global parfile_dir
-    parfile_dir = root
+def cli():
     pass
 
 def is_bam_run(run_dir) -> bool:
@@ -68,7 +63,10 @@ def count_lines(filename):
 
 def merger_time(run_dir):
     moving_puncture_filename_glob =  os.path.join(run_dir, 'moving_puncture_distance.lxyz*')
-    mpd_filename = glob.glob(moving_puncture_filename_glob)[0]
+    mpunc_glob = glob.glob(moving_puncture_filename_glob)
+    if len(mpunc_glob) == 0:
+        return 0.0, "unknown"
+    mpd_filename = mpunc_glob[0]
     skiprows = 1
     mpd = pandas.read_csv(mpd_filename, skiprows=skiprows, header=None, delimiter='\s+', dtype=float).values
     d = mpd[:,6]
@@ -115,22 +113,24 @@ class GU():
         return self.M**m * self.L**l * self.T**t
 
 @click.command()
-def list():
+@click.option('--target', default=32, help='Simulation evolution time target in ms')
+def list(target):
     table_header = ["Name", "Location", "Time", "Speed", "Done in", "Merger Status", "State", "Progress"]
-    jobs = spanner_list()
+    jobs = {}
+    try:
+        jobs = spanner_list()
+    except Exception as e:
+        print(e)
 
-    run_dirs = [os.path.dirname(filename)
-		for filename
-                in glob.glob("**/system.log", recursive=True)]
+    run_dirs = [os.path.dirname(filename) for filename in glob.glob("**/system.log", recursive=True)]
 
     table = []
-    run_notes = {}
 
     for run_dir in run_dirs:
         run_name = os.path.basename(run_dir)
         location = os.path.dirname(run_dir)
         try:
-            run_dir_path = os.path.join(os.path.abspath(parfile_dir), run_dir)
+            run_dir_path = os.path.join(os.getcwd(), run_dir)
             if not is_bam_run(run_dir_path):
               continue
             time, speed_str = runstats(run_dir_path)
@@ -145,18 +145,22 @@ def list():
             time_str = f'{time} ({time_ms:.1f}ms)'
             if m_status == "postmerger":
                 time_str = f'{time} ({time_ms:.1f}msam)'
-                done_in = ((32 * u.ms - time_ms*u.ms) / speed).to('d')
+                done_in = ((target * u.ms - time_ms*u.ms) / speed).to('d')
                 done_in_str = f'{done_in.value:.2f}d'
             else:
                 done_in_str = "-"
+            if m_status == "unknown":
+                m_status = "-"
+                m_time = "-"
             table.append([run_name, location, time_str, speed_str, done_in_str, f'{m_status} ({m_time})', state, f'{progress}'])
         except Exception as e:
             print(e)
-            table.append([run_name, location, "-", "-", "-", "-", "-", "-", "-"])
+            table.append([run_name, location, "-", "-", "-", "-", "-", "-"])
 
     print(tabulate(table, headers=table_header, tablefmt='rounded_outline'))
 
 cli.add_command(list)
+
 
 if __name__ == '__main__':
     cli()
