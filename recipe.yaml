@@ -1,0 +1,22 @@
+context:
+  version: 1.0.0
+package:
+  name: "bamboo"
+  version: '{{ version }}'
+
+source:
+  path: .
+
+requirements:
+  run:
+    - tabulate
+    - pandas
+    - numpy
+    - click
+    - astropy
+
+build:
+  noarch: generic
+  script:
+    - mkdir -p ${PREFIX}/bin
+    - cp bamboo ${PREFIX}/bin/
