@@ -162,5 +162,22 @@ def list(target):
 cli.add_command(list)
 
 
+def spanner_submit(filename):
+    spanner_output = subprocess.check_output(['spanner', 'submit', filename])
+    print(str(spanner_output))
+
+@click.command()
+@click.argument('name')
+def submit(name):
+    with open('job.py', 'r') as f:
+        job_code = f.read()
+        exec(job_code)
+        print('Generated job.sh')
+        spanner_submit('job.sh')
+        print('Submitted')
+
+cli.add_command(submit)
+
+
 if __name__ == '__main__':
     cli()
