@@ -68,7 +68,7 @@ def merger_time(run_dir):
         return 0.0, "unknown"
     mpd_filename = mpunc_glob[0]
     skiprows = 1
-    mpd = pandas.read_csv(mpd_filename, skiprows=skiprows, header=None, delimiter='\s+', dtype=float).values
+    mpd = pandas.read_csv(mpd_filename, skiprows=skiprows, header=None, delimiter='\\s+', dtype=float).values
     d = mpd[:,6]
 
     threshold = 30
