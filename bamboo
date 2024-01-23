@@ -29,12 +29,12 @@ def runstats(run_dir):
         time, speed = last_line[0], last_line[3]
         return time, speed
 
-def spanner_list():
-    spanner_output = subprocess.check_output(['spanner', 'list', '--json'])
-    spanner_jobs = json.loads(spanner_output)
+def robin_list():
+    robin_output = subprocess.check_output(['robin', 'list', '--json'])
+    robin_jobs = json.loads(robin_output)
     jobs = {}
-    for spanner_job in spanner_jobs:
-        jobs[spanner_job["Name"]] = spanner_job
+    for robin_job in robin_jobs:
+        jobs[robin_job["Name"]] = robin_job
     return jobs
 
 def number_of_lines(filename):
@@ -118,7 +118,7 @@ def list(target):
     table_header = ["Name", "Location", "Time", "Speed", "Done in", "Merger Status", "State", "Progress"]
     jobs = {}
     try:
-        jobs = spanner_list()
+        jobs = robin_list()
     except Exception as e:
         print(e)
 
@@ -162,9 +162,9 @@ def list(target):
 cli.add_command(list)
 
 
-def spanner_submit(filename):
-    spanner_output = subprocess.check_output(['spanner', 'submit', filename])
-    print(str(spanner_output))
+def robin_submit(filename):
+    robin_output = subprocess.check_output(['robin', 'submit', filename])
+    print(str(robin_output))
 
 @click.command()
 @click.argument('name')
@@ -173,7 +173,7 @@ def submit(name):
         job_code = f.read()
         exec(job_code)
         print('Generated job.sh')
-        spanner_submit('job.sh')
+        robin_submit('job.sh')
         print('Submitted')
 
 cli.add_command(submit)
