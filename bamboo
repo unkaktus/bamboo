@@ -10,6 +10,7 @@ import glob
 import subprocess
 import click
 import json
+import re
 from astropy import units as u, constants as const
 
 @click.group()
@@ -24,9 +25,19 @@ def runstats(run_dir):
     system_log_filename = os.path.join(run_dir, 'system.log')
 
     with open(system_log_filename) as f:
-        lines = f.readlines()
-        last_line = lines[-1].split()
-        time, speed = last_line[0], last_line[3]
+        speeds = []
+        time = None
+        for line in f:
+            numbers = re.findall(r"[-+]?(?:\d*\.*\d+)", line)
+            if len(numbers) != 13:
+                continue
+            speed = float(numbers[3])
+            if speed == 0.0:
+                continue
+            speeds += [speed]
+
+        time = line.split()[0]
+        speed = np.average(speeds)
         return time, speed
 
 def robin_list():
@@ -133,8 +144,9 @@ def list(target):
             run_dir_path = os.path.join(os.getcwd(), run_dir)
             if not is_bam_run(run_dir_path):
               continue
-            time, speed_str = runstats(run_dir_path)
-            speed = float(speed_str.removesuffix('M/h')) * GU(1).T.to('ms') / u.h
+            time, speed = runstats(run_dir_path)
+            speed_str = f'{speed:.1f} M/h'
+            speed *= GU(1).T.to('ms') / u.h
             state, progress = ["-", "-"]
             if run_name in jobs:
                 job = jobs[run_name]
